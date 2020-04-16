@@ -1,66 +1,75 @@
 'use strict';
 
-const todoControl = document.querySelector('.todo-control'),
-    headerInput = document.querySelector('.header-input'),
-    todoList = document.querySelector('#todo'),
-    todoCompleted = document.querySelector('#completed');
+const todoControl = document.querySelector(".todo-control"),
+    headerInput = document.querySelector(".header-input"),
+    todoList = document.getElementById("todo"),
+    todoCompleted = document.getElementById("completed");
+
+let todoData = [];
+
+const getLocal = () => {
+    localStorage.setItem('todoLists', JSON.stringify(todoData));
+};
 
 const render = () => {
     todoList.textContent = '';
     todoCompleted.textContent = '';
 
-    for (let i = 0; i < localStorage.length; i++) {
-        let key = localStorage.key(i);
-        let valueLocalStorage = JSON.parse(localStorage.getItem(key));
+    todoData = JSON.parse(localStorage.getItem('todoLists')) || [];
 
-        if (valueLocalStorage.value !== '') { // Пустые дела добавляться не должны
-            const li = document.createElement('li');
-            li.classList.add('todo-item');
-            li.innerHTML = `<span class="text-todo">${valueLocalStorage.value}</span>` +
-                `<div class="todo-buttons">` +
-                `<button class="todo-remove"></button>` +
-                `<button class="todo-complete"></button>` +
-                `</div>`;
+    todoData.forEach((item, index) => {
 
-            if (valueLocalStorage.completed) {
+        const li = document.createElement('li');
+        li.classList.add('todo-item');
+        li.innerHTML = '<span class="text-todo">' + item.value + '</span>' +
+            '<div class="todo-buttons">' +
+            '<button class="todo-remove"></button>' +
+            '<button class="todo-complete"></button>' +
+            '</div>';
+
+        if (item.completed) {
+            todoCompleted.append(li);
+        } else {
+            todoList.append(li);
+        }
+
+        let todoCompletedButton = li.querySelector('.todo-complete');
+        todoCompletedButton.addEventListener('click', () => {
+            item.completed = !item.completed;
+            if (item.completed) {
                 todoCompleted.append(li);
             } else {
                 todoList.append(li);
             }
+            getLocal();
+            render();
+        });
 
-            const btnTodoCompleted = li.querySelector('.todo-complete');
-            btnTodoCompleted.addEventListener('click', () => {
-                valueLocalStorage.completed = !valueLocalStorage.completed;
-                if (valueLocalStorage.completed) {
-                    todoCompleted.append(li);
-                } else {
-                    todoList.append(li);
-                }
-            });
+        let removeItemsFromTodo = li.querySelector('.todo-remove');
+        removeItemsFromTodo.addEventListener('click', () => {
+            todoData.splice(todoData.indexOf(item), 1);
+            getLocal();
+            render();
+        });
 
-            const btnTodoRemove = li.querySelector('.todo-remove');
-            btnTodoRemove.addEventListener('click', (event) => { // Удаление дел на кнопку КОРЗИНА
-                li.remove();
-                localStorage.removeItem(key);
-            });
-        }
-    };
+    });
+
 };
 
 todoControl.addEventListener('submit', (event) => {
     event.preventDefault();
-
-    const newTodo = {
-        value: headerInput.value,
-        completed: false
-    };
-
     if (headerInput.value !== '') {
-        localStorage.setItem(localStorage.length, JSON.stringify(newTodo));
-    }
-    headerInput.value = ''; // Поле ввода после добавления дела должно очищаться
-    render();
+        const newTodo = {
+            value: headerInput.value,
+            completed: false,
+        };
 
+        headerInput.value = '';
+
+        todoData.push(newTodo);
+        getLocal();
+        render();
+    }
 });
 
 render();
